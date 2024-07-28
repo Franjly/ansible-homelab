@@ -1,0 +1,11 @@
+[Unit]
+Description=Pi-hole Exporter for Prometheus
+After=network.target
+
+[Service]
+User=root
+ExecStart={{ pi_hole_exporter.path }} --pihole_password {{ pi_hole.password }} --port {{ pi_hole_exporter.port }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

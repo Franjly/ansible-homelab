@@ -1,0 +1,6 @@
+---
+- name: Test pi_hole role
+  hosts: localhost
+  remote_user: root
+  roles:
+    - pi_hole

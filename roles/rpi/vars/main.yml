@@ -1,0 +1,6 @@
+---
+rpi_container_features:
+  # - "ipv6.disable=1"
+  - "cgroup_enable=cpuset"
+  - "cgroup_memory=1"
+  - "cgroup_enable=memory"

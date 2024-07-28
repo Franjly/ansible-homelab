@@ -1,0 +1,15 @@
+[Unit]
+Description=cloudflared DNS over HTTPS proxy
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+User={{ cloudflared.user }}
+EnvironmentFile={{ cloudflared.env_file }}
+ExecStart={{ cloudflared.path }} proxy-dns $CLOUDFLARED_OPTS
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

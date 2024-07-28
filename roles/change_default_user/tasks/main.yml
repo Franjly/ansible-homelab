@@ -1,0 +1,70 @@
+---
+- name: Create group "{{ user }}"
+  ansible.builtin.group:
+    name: '{{ user }}'
+    state: present
+    gid: '{{ gid }}'
+
+- name: Create user "{{ user }}"
+  ansible.builtin.user:
+    name: '{{ user }}'
+    state: present
+    password: '{{ passwd }}'
+    uid: '{{ uid }}'
+    groups: "{{ user }},adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,render,netdev,gpio,i2c,spi"
+    shell: /bin/bash
+    expires: -1
+
+- name: Add user to passwordless sudoers -> "{{ user }}"
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers
+    regexp: '^{{ user }}'
+    line: '{{ user }} ALL=(ALL) NOPASSWD: ALL'
+    state: present
+    validate: 'visudo -cf %s'
+
+- name: Check /etc/lightdm/ exist
+  ansible.builtin.file:
+    path: /etc/lightdm/
+    state: directory
+    owner: root
+    group: root
+    mode: '755'
+
+- name: Set as default autologin user -> "{{ user }}"
+  ansible.builtin.copy:
+    dest: /etc/lightdm/lightdm.conf
+    mode: '644'
+    content: 'autologin-user={{ user }}'
+
+- name: Set as default autologin user -> "{{ user }}"
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/getty@tty1.service.d/autologin.conf
+    mode: '644'
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=-/sbin/agetty --autologin {{ user }} --noclear %I $TERM
+      EOF
+
+- name: Get destination user state
+  ansible.builtin.user:
+    name: "{{ user }}"
+  register: destination_user_data
+
+- name: User | switch current user to {{ user }}
+  ansible.builtin.set_fact:
+    current_user: "{{ ansible_user }}"
+    ansible_user: "{{ user }}"
+  when: destination_user_data.state == "present"
+
+- name: User | remove current user {{ current_user }}
+  ansible.builtin.user:
+    name: "{{ current_user }}"
+    state: absent
+    remove: true
+    force: true
+  when: destination_user_data.state == "present" and current_user != user
+
+- name: Reboot
+  ansible.builtin.reboot:

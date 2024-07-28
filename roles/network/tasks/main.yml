@@ -1,0 +1,26 @@
+---
+- name: Configure interface {{ network.interface }}
+  community.general.nmcli:
+    conn_name: "{{ network.conn_name }}"
+    ifname: "{{ network.interface }}"
+    type: "{{ network.type }}"
+    ip4: "{{ network.prefix_ip_address }}{{ ansible_host.split('.')[3] }}/24"
+    gw4: "{{ network.gateway }}"
+    dns4: "{{ network.dns_nameservers | list }}"
+    state: present
+
+- name: Configure VLANs interface
+  community.general.nmcli:
+    type: "{{ item.type }}"
+    conn_name: "{{ network.interface }}.{{ item.id }}"
+    vlandev: "{{ network.interface }}"
+    vlanid: "{{ item.id }}"
+    ip4: "{{ item.prefix_ip_address }}{{ ansible_host.split('.')[3] }}/24"
+    gw4: "{{ item.gateway }}"
+    dns4: "{{ network.dns_nameservers | list }}"
+    state: present
+  loop: "{{ network.vlan }}"
+  when: network.vlan is defined and network.vlan | length > 0
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

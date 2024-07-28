@@ -1,0 +1,36 @@
+---
+- name: Set hostname
+  ansible.builtin.hostname:
+    name: '{{ inventory_hostname }}'
+
+- name: Set /etc/hosts hostname
+  ansible.builtin.lineinfile:
+    dest: /etc/hosts
+    regexp: '(127.0.1.1\s+).+$'
+    backrefs: true
+    line: '\g<1>{{ inventory_hostname }}'
+    state: present
+
+- name: Check if swap is enabled
+  ansible.builtin.command: swapon -s | wc -l
+  changed_when: false
+  register: swap_enabled
+
+- name: Disable swap
+  ansible.builtin.command: "{{ item }}"
+  with_items:
+    - dphys-swapfile swapoff
+    - dphys-swapfile uninstall
+    - update-rc.d dphys-swapfile disable
+  changed_when: false
+  when: swap_enabled.stdout != "1"
+
+- name: Add users to passwordless sudoers
+  ansible.builtin.lineinfile:
+    dest: /etc/sudoers
+    regexp: '^{{ item }}'
+    line: '{{ item }} ALL=(ALL) NOPASSWD: ALL'
+    state: present
+    validate: 'visudo -cf %s'
+  with_items: "{{ os_passwordless_sudoers }}"
+  when: os_passwordless_sudoers | length > 0

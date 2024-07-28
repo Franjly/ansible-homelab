@@ -1,0 +1,3 @@
+{% for item in pi_hole.ad_list %}
+INSERT OR IGNORE INTO adlist (address, enabled, comment) VALUES('{{ item }}', 1, 'Added from Ansible');
+{% endfor %}

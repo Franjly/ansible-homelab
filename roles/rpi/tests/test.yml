@@ -1,0 +1,6 @@
+---
+- name: Test rpi role
+  hosts: localhost
+  remote_user: root
+  roles:
+    - rpi

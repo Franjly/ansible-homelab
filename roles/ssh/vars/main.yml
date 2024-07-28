@@ -1,0 +1,25 @@
+---
+# vars file for ssh
+comment_re_prefix: '^[# \t]*'
+
+ssh_keygen_algorithm: 'ed25519'
+ssh_keygen_kdf: 100
+ssh_keygen_comment: "pi-k3s"
+ssh_keygen_password: ''
+
+ssh_sshd_config_path: /etc/ssh/sshd_config
+ssh_port: 22
+ssh_password_auth: "no"
+ssh_permit_root_login: "no"
+ssh_usedns: "no"
+ssh_permit_empty_passwords: "no"
+ssh_challenge_response_auth: "no"
+ssh_gss_api_auth: "no"
+ssh_x11_forwarding: "no"
+
+ssh_config_path: /etc/ssh/ssh_config
+ssh_hash_known_hosts: "no"
+ssh_host_key_algorithm: 'ed25519'
+
+ssh_admin_key: '~/.ssh/id_ed25519.pub'
+ssh_enable_internode_ssh: false

@@ -1,0 +1,11 @@
+---
+- name: Run base config
+  hosts: all
+  become: true
+  roles:
+    - base
+    - rpi
+    - os
+    - ssh
+    - network
+    - pi_hole

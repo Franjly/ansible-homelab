@@ -1,0 +1,3 @@
+{% for item in pi_hole.white_list %}
+INSERT OR IGNORE INTO domainlist (domain, enabled, comment) VALUES('{{ item }}', 1, 'Added from Ansible');
+{% endfor %}

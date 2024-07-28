@@ -1,0 +1,156 @@
+---
+- name: Import role network
+  ansible.builtin.import_role:
+    name: network
+
+- name: Configure DNS
+  community.general.nmcli:
+    conn_name: "{{ network.conn_name }}"
+    type: "{{ network.type }}"
+    dns4:
+      - "{{ setup_vars.pihole_dns_1 }}"
+      - "{{ setup_vars.pihole_dns_2 }}"
+      - "{{ ansible_host }}"
+    state: present
+
+- name: Update and upgrade apt packages
+  ansible.builtin.apt:
+    update_cache: true
+    upgrade: dist
+
+- name: Create Pi-hole directory
+  ansible.builtin.file:
+    path: /etc/pihole
+    state: directory
+    mode: '775'
+
+- name: Create Pi-hole config from template
+  ansible.builtin.template:
+    src: setupVars.conf.j2
+    dest: /etc/pihole/setupVars.conf
+    mode: '644'
+
+- name: Create custom DNS config from template
+  ansible.builtin.template:
+    src: 02-custom.conf.j2
+    dest: /etc/dnsmasq.d/02-custom.conf
+    mode: '644'
+
+- name: Download Pi-hole install script
+  ansible.builtin.get_url:
+    url: https://install.pi-hole.net
+    dest: /tmp/basic-install.sh
+    mode: '644'
+
+- name: Install Pi-hole
+  ansible.builtin.command: bash /tmp/basic-install.sh --unattended
+  changed_when: false
+
+- name: Ensure SQLite3 is installed
+  ansible.builtin.apt:
+    name: sqlite3
+    state: present
+    update_cache: true
+
+- name: Create AD list SQL script
+  ansible.builtin.template:
+    src: ad_list.sql.j2
+    dest: /tmp/ad_list.sql
+    mode: '644'
+
+- name: Add AD list to gravity DB
+  ansible.builtin.shell: sqlite3 /etc/pihole/gravity.db < /tmp/ad_list.sql
+  changed_when: false
+
+- name: Create Whitelist domain list SQL script
+  ansible.builtin.template:
+    src: white_list.sql.j2
+    dest: /tmp/white_list.sql
+    mode: '644'
+
+- name: Add Whitelist domain list to gravity DB
+  ansible.builtin.shell: sqlite3 /etc/pihole/gravity.db < /tmp/white_list.sql
+  changed_when: false
+
+- name: Add system user cloudflared
+  ansible.builtin.user:
+    name: "{{ cloudflared.user }}"
+    shell: /usr/sbin/nologin
+    system: true
+    create_home: false
+    state: present
+
+- name: Download cloudflared binary
+  ansible.builtin.get_url:
+    url: "https://github.com/cloudflare/cloudflared/releases/download/{{ cloudflared.version }}/cloudflared-{{ cloudflared.arch }}"
+    dest: "{{ cloudflared.path }}"
+    owner: "{{ cloudflared.user }}"
+    group: "{{ cloudflared.user }}"
+    mode: '0755'
+
+- name: Create "{{ cloudflared.env_file }}"
+  ansible.builtin.copy:
+    dest: "{{ cloudflared.env_file }}"
+    content: |
+      # Commandline args for cloudflared
+      CLOUDFLARED_OPTS=--port "{{ cloudflared.port }}" --upstream https://"{{ setup_vars.pihole_dns_1 }}"/dns-query \
+        --upstream https://"{{ setup_vars.pihole_dns_2 }}"/dns-query
+    owner: "{{ cloudflared.user }}"
+    group: "{{ cloudflared.user }}"
+    mode: '0644'
+
+- name: Create cloudflared systemd service
+  ansible.builtin.template:
+    src: cloudflared.service.j2
+    dest: /etc/systemd/system/cloudflared.service
+    mode: '644'
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start cloudflared service
+  ansible.builtin.systemd:
+    name: cloudflared
+    enabled: true
+    state: started
+
+- name: Overwrite setup_vars with cloudflared upstream DNS server
+  ansible.builtin.template:
+    src: setupVars-doh.conf.j2
+    dest: /etc/pihole/setupVars.conf
+    mode: '644'
+
+- name: Download pihole_exporter binary
+  ansible.builtin.get_url:
+    url: "https://github.com/eko/pihole-exporter/releases/download/v{{ pi_hole_exporter.version }}/pihole_exporter-{{ pi_hole_exporter.arch }}"
+    dest: "{{ pi_hole_exporter.path }}"
+    mode: '0755'
+
+- name: Create pihole_exporter systemd service
+  ansible.builtin.template:
+    src: pihole_exporter.service.j2
+    dest: /etc/systemd/system/pihole_exporter.service
+    mode: '644'
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Enable and start pihole_exporter service
+  ansible.builtin.systemd:
+    name: pihole_exporter
+    enabled: true
+    state: started
+
+- name: Update Pi-hole gravity
+  ansible.builtin.command: pihole -g
+  changed_when: false
+
+- name: Reconfigure Pi-hole
+  ansible.builtin.command: bash /tmp/basic-install.sh --reconfigure --unattended
+  changed_when: false
+
+- name: Restart Pi-hole
+  ansible.builtin.command: pihole restartdns
+  changed_when: false

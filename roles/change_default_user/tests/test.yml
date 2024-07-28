@@ -1,0 +1,6 @@
+---
+- name: Test change_default_user role
+  hosts: localhost
+  remote_user: root
+  roles:
+    - change_default_user

@@ -1,0 +1,114 @@
+---
+setup_vars:
+  pihole_interface: eth0
+  pihole_dns_1: 1.1.1.1
+  pihole_dns_2: 1.0.0.1
+  pihole_dns_doh: 127.0.0.1#5053
+  query_logging: true
+  install_web_server: true
+  install_web_interface: true
+  lighttpd_enabled: true
+  cache_size: 10000
+  dns_fqdn_required: true
+  dns_bogus_priv: true
+  dnsmasq_listening: local
+  webpassword: !vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            62626163373564653739363832633865376164336332366164396166333061653062333030643665
+            6166653665303264396461303433636366663561366637360a383338306162383634336231343436
+            31333563643066313165643731313231363938363964656161616639333964643963623336326131
+            6466396665636161370a356161356266383232383238353761313466303037623065653365653033
+            32336563386131393263646431383034663364626337336663356366303963383530656132633734
+            34353066633530643738343863663865353833333936643135393730653734313938363736313036
+            62343232383863616432636664306630373138353631326166663137333038363465343465343364
+            32356533366634326338
+  blocking_enabled: true
+  dnssec: false
+  rev_server: false
+
+pi_hole:
+  password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          39633535623535613361613264353130646463333835383535353430346339386535303037316561
+          3064373431336539363763393739333038656465333162330a373765363537356538343536393935
+          65363263383665633962353963373266353466306638616132613337396263663736303330653431
+          6139626466323361300a616538356164396631393032383334623766376466363337646331306664
+          33313236663665396165663663333438303465663039623139333933376162393564313062636538
+          35656462613765306530306662653962646166353665343036383236643938326330636332326165
+          37643436343630323864316432373832313035353165643933666661613762323634326439383938
+          30303030653133383139
+  custom_dns:
+    - "address=/local.tecno-fly.com/192.168.40.200"
+    - "interface=eth0"
+    # - "dhcp-option=6,192.168.40.254"
+  ad_list:
+    # Default
+    - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+    # Firebog - Links (Green)
+    - https://raw.githubusercontent.com/PolishFiltersTeam/KADhosts/master/KADhosts.txt
+    - https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Spam/hosts
+    - https://v.firebog.net/hosts/static/w3kbl.txt
+    - https://adaway.org/hosts.txt
+    - https://v.firebog.net/hosts/AdguardDNS.txt
+    - https://v.firebog.net/hosts/Admiral.txt
+    - https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt
+    - https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt
+    - https://v.firebog.net/hosts/Easylist.txt
+    - https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=0&mimetype=plaintext
+    - https://raw.githubusercontent.com/FadeMind/hosts.extras/master/UncheckyAds/hosts
+    - https://raw.githubusercontent.com/bigdargon/hostsVN/master/hosts
+    - https://v.firebog.net/hosts/Easyprivacy.txt
+    - https://v.firebog.net/hosts/Prigent-Ads.txt
+    - https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.2o7Net/hosts
+    - https://raw.githubusercontent.com/crazy-max/WindowsSpyBlocker/master/data/hosts/spy.txt
+    - https://hostfiles.frogeye.fr/firstparty-trackers-hosts.txt
+    - https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Alternate%20versions%20Anti-Malware%20List/AntiMalwareHosts.txt
+    - https://osint.digitalside.it/Threat-Intel/lists/latestdomains.txt
+    - https://s3.amazonaws.com/lists.disconnect.me/simple_malvertising.txt
+    - https://v.firebog.net/hosts/Prigent-Crypto.txt
+    - https://raw.githubusercontent.com/FadeMind/hosts.extras/master/add.Risk/hosts
+    - https://bitbucket.org/ethanr/dns-blacklists/raw/8575c9f96e5b4a1308f2f12394abd86d0927a4a0/bad_lists/Mandiant_APT1_Report_Appendix_D.txt
+    - https://phishing.army/download/phishing_army_blocklist_extended.txt
+    - https://malware-filter.gitlab.io/malware-filter/phishing-filter-hosts.txt
+    - https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-malware.txt
+    - https://v.firebog.net/hosts/RPiList-Malware.txt
+    - https://v.firebog.net/hosts/RPiList-Phishing.txt
+    - https://raw.githubusercontent.com/Spam404/lists/master/main-blacklist.txt
+    - https://raw.githubusercontent.com/AssoEchap/stalkerware-indicators/master/generated/hosts
+    - https://urlhaus.abuse.ch/downloads/hostfile/
+    - https://zerodot1.gitlab.io/CoinBlockerLists/hosts_browser
+    # Firebog - Extra Links (Blue)
+    # - https://raw.githubusercontent.com/matomo-org/referrer-spam-blacklist/master/spammers.txt
+    # - https://someonewhocares.org/hosts/zero/hosts
+    # - https://raw.githubusercontent.com/VeleSila/yhosts/master/hosts
+    # - https://winhelp2002.mvps.org/hosts.txt
+    # - https://v.firebog.net/hosts/neohostsbasic.txt
+    # - https://raw.githubusercontent.com/RooneyMcNibNug/pihole-stuff/master/SNAFU.txt
+    # - https://paulgb.github.io/BarbBlock/blacklists/hosts-file.txt
+    # - https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts
+    # - https://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt
+    # - https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/android-tracking.txt
+    # - https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt
+    # - https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/AmazonFireTV.txt
+    # - https://gitlab.com/quidsup/notrack-blocklists/raw/master/notrack-blocklist.txt
+    # - https://v.firebog.net/hosts/Prigent-Malware.txt
+    # - https://raw.githubusercontent.com/chadmayfield/my-pihole-blocklists/master/lists/pi_blocklist_porn_top1m.list
+    # - https://v.firebog.net/hosts/Prigent-Adult.txt
+    # - https://raw.githubusercontent.com/anudeepND/blacklist/master/facebook.txt
+  white_list:
+    - https://raw.githubusercontent.com/anudeepND/whitelist/master/domains/whitelist.txt
+    - login.microsoftonline.com
+
+cloudflared:
+  arch: linux-arm
+  version: "2024.6.1"
+  path: /usr/local/bin/cloudflared
+  port: 5053
+  user: cloudflared
+  env_file: /etc/default/cloudflared
+
+pi_hole_exporter:
+  arch: linux-arm
+  version: "0.4.0"
+  path: /usr/local/bin/pihole_exporter
+  port: 9617
