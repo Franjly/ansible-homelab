@@ -30,12 +30,6 @@
     dest: /etc/pihole/setupVars.conf
     mode: '644'
 
-- name: Create custom DNS config from template
-  ansible.builtin.template:
-    src: 02-custom.conf.j2
-    dest: /etc/dnsmasq.d/02-custom.conf
-    mode: '644'
-
 - name: Download Pi-hole install script
   ansible.builtin.get_url:
     url: https://install.pi-hole.net
@@ -45,6 +39,12 @@
 - name: Install Pi-hole
   ansible.builtin.command: bash /tmp/basic-install.sh --unattended
   changed_when: false
+
+- name: Create custom DNS config from template
+  ansible.builtin.template:
+    src: 02-custom.conf.j2
+    dest: /etc/dnsmasq.d/02-custom.conf
+    mode: '644'
 
 - name: Ensure SQLite3 is installed
   ansible.builtin.apt:
