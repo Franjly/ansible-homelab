@@ -36,5 +36,12 @@
   ansible.builtin.apt:
     upgrade: full
 
+- name: Force reboot
+  ansible.builtin.debug:
+    msg:
+      - "Force reboot"
+  notify: Reboot host and wait for it to restart
+  changed_when: true
+
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
