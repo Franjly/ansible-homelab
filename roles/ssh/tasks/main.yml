@@ -85,4 +85,4 @@
     - regexp: '{{ comment_re_prefix }}HashKnownHosts'
       line: 'HashKnownHosts {{ ssh_hash_known_hosts }}'
   notify:
-    - restart ssh
+    - Restart ssh
