@@ -1,0 +1,4 @@
+---
+storage:
+  longhorn: /data/longhorn
+  nfs_provisioner: /data/nfs-provisioner

@@ -1,0 +1,19 @@
+---
+- name: Check if exist {{ storage.longhorn }}
+  ansible.builtin.file:
+    path: '{{ storage.longhorn }}'
+    state: directory
+    owner: root
+    group: root
+    mode: "755"
+
+- name: Check if exist {{ storage.nfs_provisioner }}
+  ansible.builtin.file:
+    path: '{{ storage.nfs_provisioner }}'
+    state: directory
+    owner: root
+    group: root
+    mode: "755"
+
+- name: Reboot
+  ansible.builtin.reboot:
