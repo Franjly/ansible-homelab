@@ -1,7 +1,6 @@
 galaxy_info:
   author: Franjly
-  description: Role to cheange default user for pi-k3s
-
+  description: Role k3s_deploy apps
   # If the issue tracker for your role is not on github, uncomment the
   # next line and provide a value
   # issue_tracker_url: http://example.com/issue/tracker
