@@ -1,0 +1,33 @@
+---
+- name: Install k3s workers
+  ansible.builtin.command: curl -sfL https://get.k3s.io | sh -
+  # args:
+  #   warn: false
+  environment:
+    INSTALL_K3S_VERSION: '{{ k3s_version }}'
+    INSTALL_K3S_CHANNEL: '{{ k3s_channel }}'
+    K3S_URL: 'https://{{ k3s_master.ip }}:6443'
+    K3S_TOKEN: '{{ hostvars[k3s_master.hostname].k3s_node_token_encoded.content | b64decode | trim }}'
+    INSTALL_K3S_EXEC: "{{ k3s_worker.flags | join(' ') }}"
+  register: k3s_agent_install
+  changed_when: true
+
+- name: Node install stdout
+  ansible.builtin.debug:
+    msg: "{{ k3s_agent_install.stdout_lines }}"
+
+- name: Node install stderr
+  ansible.builtin.debug:
+    msg: "{{ k3s_agent_install.stderr_lines }}"
+
+- name: Apply labels to each worker nodes
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Node
+      metadata:
+        name: "{{ inventory_hostname }}"
+        labels:
+          kubernetes.io/role: worker
+  delegate_to: localhost

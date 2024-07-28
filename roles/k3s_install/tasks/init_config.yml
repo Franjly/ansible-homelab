@@ -1,0 +1,47 @@
+---
+- name: Enable iptables to see bridged traffic - modules-load.d
+  ansible.builtin.copy:
+    dest: "/etc/modules-load.d/k3s.conf"
+    content: |
+      br_netfilter
+    mode: "644"
+
+- name: Enable iptables to see bridged traffic - sysctl.d
+  ansible.builtin.copy:
+    dest: "/etc/sysctl.d/k3s.conf"
+    content: |
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.bridge.bridge-nf-call-iptables = 1
+    mode: "644"
+
+- name: Create k3s config directory
+  ansible.builtin.file:
+    path: "/etc/rancher/k3s"
+    state: directory
+    mode: "755"
+
+- name: Prepare K3S kubelet configuration file
+  ansible.builtin.copy:
+    dest: "/etc/rancher/k3s/kubelet.config"
+    content: |
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      kind: KubeletConfiguration
+      shutdownGracePeriod: 30s
+      shutdownGracePeriodCriticalPods: 10s
+    mode: "644"
+
+- name: Configure NetworkManager
+  ansible.builtin.copy:
+    dest: "/etc/NetworkManager/conf.d/calico.conf"
+    content: |
+      [keyfile]
+      unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
+    mode: "644"
+
+- name: Configure parameters
+  ansible.builtin.command: "sudo sysctl --system"
+  changed_when: true
+  notify: Reboot host and wait for it to restart
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

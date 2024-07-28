@@ -1,0 +1,42 @@
+---
+- name: Install k3s masters
+  ansible.builtin.command: curl -sfL https://get.k3s.io | sh -
+  environment:
+    INSTALL_K3S_VERSION: '{{ k3s_version }}'
+    INSTALL_K3S_CHANNEL: '{{ k3s_channel }}'
+    K3S_KUBECONFIG_MODE: '600'
+    INSTALL_K3S_EXEC: "{{ k3s_master.flags | join(' ') }}"
+  register: k3s_server_install
+  changed_when: true
+
+- name: Master isntall stdout
+  ansible.builtin.debug:
+    msg: "{{ k3s_server_install.stdout_lines }}"
+
+- name: Master isntall stderr
+  ansible.builtin.debug:
+    msg: "{{ k3s_server_install.stderr_lines }}"
+
+- name: Get join token
+  ansible.builtin.slurp:
+    src: '/var/lib/rancher/k3s/server/node-token'
+  register: k3s_node_token_encoded
+
+- name: Get kube config
+  ansible.builtin.fetch:
+    src: '/etc/rancher/k3s/k3s.yaml'
+    dest: '~/.kube/config'
+    flat: true
+
+- name: Set IP on kube config
+  ansible.builtin.replace:
+    path: '~/.kube/config'
+    regexp: '127\.0\.0\.1'
+    replace: "{{ k3s_api_server_host }}"
+  delegate_to: localhost
+
+- name: Update kube config permissions
+  ansible.builtin.file:
+    path: '~/.kube/config'
+    mode: '0600'
+  delegate_to: localhost

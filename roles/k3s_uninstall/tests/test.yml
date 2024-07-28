@@ -1,0 +1,6 @@
+---
+- name: Test k3s_uninstall role
+  hosts: localhost
+  remote_user: root
+  roles:
+    - k3s_uninstall

@@ -1,0 +1,4 @@
+---
+- name: Uninstall k3s masters
+  ansible.builtin.command: /usr/local/bin/k3s-uninstall.sh
+  changed_when: true
