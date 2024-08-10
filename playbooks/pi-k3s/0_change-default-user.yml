@@ -1,0 +1,6 @@
+---
+- name: Change default user to pi-k3s
+  hosts: all
+  become: true
+  roles:
+    - change_default_user

@@ -1,26 +1,37 @@
 ---
-- name: Configure interface {{ network.interface }}
+- name: Set network facts based on group
+  ansible.builtin.set_fact:
+    merged_network: >-
+      {{
+        (hostvars[inventory_hostname]['network'] | default({})) | combine({
+          'prefix_ip_address': (hostvars[inventory_hostname]['network']['prefix_ip_address'] | default('')),
+          'gateway': (hostvars[inventory_hostname]['network']['gateway'] | default('')),
+          'vlan': (hostvars[inventory_hostname]['network']['vlan'] | default([]))
+        }, recursive=True)
+      }}
+
+- name: Configure interface {{ merged_network.interface | default(network.interface) }}
   community.general.nmcli:
-    conn_name: "{{ network.conn_name }}"
-    ifname: "{{ network.interface }}"
-    type: "{{ network.type }}"
-    ip4: "{{ network.prefix_ip_address }}{{ ansible_host.split('.')[3] }}/24"
-    gw4: "{{ network.gateway }}"
+    conn_name: "{{ merged_network.conn_name | default(network.conn_name) }}"
+    ifname: "{{ merged_network.interface | default(network.interface) }}"
+    type: "{{ merged_network.type | default(network.type) }}"
+    ip4: "{{ merged_network.prefix_ip_address }}{{ ansible_host.split('.')[3] }}/24"
+    gw4: "{{ merged_network.gateway }}"
     dns4: "{{ network.dns_nameservers | list }}"
     state: present
 
 - name: Configure VLANs interface
   community.general.nmcli:
     type: "{{ item.type }}"
-    conn_name: "{{ network.interface }}.{{ item.id }}"
-    vlandev: "{{ network.interface }}"
+    conn_name: "{{ merged_network.interface | default(network.interface) }}.{{ item.id }}"
+    vlandev: "{{ merged_network.interface | default(network.interface) }}"
     vlanid: "{{ item.id }}"
     ip4: "{{ item.prefix_ip_address }}{{ ansible_host.split('.')[3] }}/24"
     gw4: "{{ item.gateway }}"
     dns4: "{{ network.dns_nameservers | list }}"
     state: present
-  loop: "{{ network.vlan }}"
-  when: network.vlan is defined and network.vlan | length > 0
+  loop: "{{ merged_network.vlan }}"
+  when: merged_network.vlan is defined and merged_network.vlan | length > 0
 
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers

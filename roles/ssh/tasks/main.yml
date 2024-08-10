@@ -73,7 +73,7 @@
     - regexp: '{{ comment_re_prefix }}X11Forwarding'
       line: 'X11Forwarding {{ ssh_x11_forwarding }}'
   notify:
-    - restart ssh
+    - Restart ssh
 
 - name: Secure SSH hosts configuration
   ansible.builtin.lineinfile:

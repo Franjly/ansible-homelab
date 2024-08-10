@@ -9,7 +9,7 @@
   ansible.builtin.user:
     name: '{{ user }}'
     state: present
-    password: '{{ passwd }}'
+    password: '{{ passwd_hash }}'
     uid: '{{ uid }}'
     groups: "{{ user }},adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,render,netdev,gpio,i2c,spi"
     shell: /bin/bash
@@ -56,6 +56,8 @@
   ansible.builtin.set_fact:
     current_user: "{{ ansible_user }}"
     ansible_user: "{{ user }}"
+    ansible_ssh_pass: "{{ passwd }}"
+
   when: destination_user_data.state == "present"
 
 - name: User | remove current user {{ current_user }}

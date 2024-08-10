@@ -1,0 +1,11 @@
+---
+- name: Base config for pi-k3s
+  hosts: all
+  become: true
+  roles:
+    - base
+    - rpi
+    - os
+    - ssh
+    - network
+    - storage

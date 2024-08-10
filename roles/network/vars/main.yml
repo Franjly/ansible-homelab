@@ -3,19 +3,6 @@ network:
   interface: eth0
   conn_name: "Wired connection 1"
   type: ethernet
-  prefix_ip_address: 192.168.40.
-  gateway: 192.168.40.1
-  # vlan:
-  #   - name: network
-  #     id: 40
-  #     type: vlan
-  #     prefix_ip_address: 192.168.40.2
-  #     gateway: 192.168.40.1
-  #   - name: IoT
-  #     id: 60
-  #     type: vlan
-  #     prefix_ip_address: 192.168.60.2
-  #     gateway: 192.168.60.1
   dns_nameservers:
     - 192.168.40.254
     - 192.168.40.253

@@ -1,8 +1,10 @@
 ---
 - name: Uninstall masters
-  ansible.builtin.include_role: uninstall_master.yml
+  ansible.builtin.include_tasks:
+    file: uninstall_master.yml
   when: '"master" in group_names'
 
 - name: Uninstall nodes
-  ansible.builtin.include_role: uninstall_nodes.yml
+  ansible.builtin.include_tasks:
+    file: uninstall_nodes.yml
   when: '"workers" in group_names'
