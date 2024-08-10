@@ -1,6 +1,12 @@
 ---
+- name: Download K3s installation script
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/get-k3s.sh
+    mode: '0755'
+
 - name: Install k3s masters
-  ansible.builtin.command: curl -sfL https://get.k3s.io | sh -
+  ansible.builtin.command: /tmp/get-k3s.sh
   environment:
     INSTALL_K3S_VERSION: '{{ k3s_version }}'
     INSTALL_K3S_CHANNEL: '{{ k3s_channel }}'
@@ -29,13 +35,15 @@
     flat: true
 
 - name: Set IP on kube config
+  become: false
   ansible.builtin.replace:
     path: '~/.kube/config'
     regexp: '127\.0\.0\.1'
-    replace: "{{ k3s_api_server_host }}"
+    replace: "{{ k3s_master.ip }}"
   delegate_to: localhost
 
 - name: Update kube config permissions
+  become: false
   ansible.builtin.file:
     path: '~/.kube/config'
     mode: '0600'

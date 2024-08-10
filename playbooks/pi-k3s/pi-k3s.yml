@@ -1,0 +1,13 @@
+---
+- name: Basic config of the nodes, install k3s and deploy apps
+  hosts: all
+  become: true
+  roles:
+    - base
+    - rpi
+    - os
+    - ssh
+    - network
+    - storage
+    - k3s_install
+    - k3s_deploy_apps

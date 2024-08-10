@@ -1,0 +1,6 @@
+---
+- name: Deploy apps in k3s
+  hosts: all
+  become: true
+  roles:
+    - k3s_deploy_apps

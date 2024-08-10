@@ -1,11 +1,14 @@
 ---
 - name: Init config
-  ansible.builtin.include_role: init_config.yml
+  ansible.builtin.include_tasks:
+    file: init_config.yml
 
 - name: Init master
-  ansible.builtin.include_role: init_master.yml
+  ansible.builtin.include_tasks:
+    file: init_master.yml
   when: '"master" in group_names'
 
 - name: Init nodes
-  ansible.builtin.include_role: init_nodes.yml
+  ansible.builtin.include_tasks:
+    file: init_nodes.yml
   when: '"workers" in group_names'
