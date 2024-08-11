@@ -74,10 +74,10 @@
 #     file: dashboards.yml
 #   run_once: true
 
-- name: Deploy external-endpoints
-  ansible.builtin.include_tasks:
-    file: external-endpoints.yml
-  run_once: true
+# - name: Deploy external-endpoints
+#   ansible.builtin.include_tasks:
+#     file: external-endpoints.yml
+#   run_once: true
 
 # - name: Deploy arr apps
 #   ansible.builtin.include_tasks:
@@ -89,10 +89,10 @@
 #     file: home-assistant.yml
 #   run_once: true
 
-# - name: Deploy octoprint
-#   ansible.builtin.include_tasks:
-#     file: octoprint.yml
-#   run_once: true
+- name: Deploy octoprint
+  ansible.builtin.include_tasks:
+    file: octoprint.yml
+  run_once: true
 
 # - name: Deploy cloudfared
 #   ansible.builtin.include_tasks:
