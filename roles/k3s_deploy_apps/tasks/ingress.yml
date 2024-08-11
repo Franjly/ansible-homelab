@@ -1,0 +1,62 @@
+---
+- name: Disable ingress-nginx metrics until prometheus is deployed
+  become: false
+  ansible.builtin.lineinfile:
+    dest: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/ingress-nginx/values.yaml"
+    regexp: "^(\\s*)enabled:.*"
+    line: '\1enabled: false'
+    firstmatch: true
+    backrefs: true
+    state: present
+  delegate_to: localhost
+
+- name: Disable ingress-nginx metrics until prometheus is deployed
+  become: false
+  ansible.builtin.lineinfile:
+    dest: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/ingress-nginx/kustomization.yaml"
+    regexp: "{{ item }}"
+    line: "#{{ item }}"
+    state: present
+  with_items:
+    - '- ./resources/prometheus-rules.yaml'
+  delegate_to: localhost
+
+- name: Commit ingress-nginx changes to repository
+  become: false
+  ansible.builtin.shell: |
+    git add values.yaml &&
+    git add kustomization.yaml &&
+    git commit -m "[Ansible] ingress-nginx - Temporary disabled metrics" &&
+    git push
+  args:
+    chdir: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/ingress-nginx"
+  ignore_errors: true
+  register: ignore_errors_register
+  changed_when: true
+  delegate_to: localhost
+  tags:
+    - skip_ansible_lint
+
+- name: Deploy ingress-nginx
+  become: false
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  with_items:
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/ingress-nginx/project/ingress-nginx.yaml'
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/ingress-nginx/application/ingress-nginx.yaml'
+  delegate_to: localhost
+
+- name: Pause 30 seconds to deploy ingress-nginx
+  ansible.builtin.pause:
+    seconds: 30
+
+- name: Wait for ingress-nginx pods to be running
+  become: false
+  ansible.builtin.command: kubectl get pods -n ingress-nginx -o json
+  register: kubectl_get_pods_ingress_nginx
+  until: kubectl_get_pods_ingress_nginx.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+  retries: 10
+  delay: 30
+  changed_when: true
+  delegate_to: localhost

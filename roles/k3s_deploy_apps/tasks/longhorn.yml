@@ -1,0 +1,90 @@
+---
+- name: Create namespace "{{ apps.longhorn.namespace }}"
+  become: false
+  kubernetes.core.k8s:
+    name: "{{ apps.longhorn.namespace }}"
+    kind: Namespace
+    state: present
+  delegate_to: localhost
+
+- name: Create secret
+  become: false
+  ansible.builtin.template:
+    src: "templates/longhorn-backup-target-credential-secret.yaml.j2"
+    dest: "{{ playbook_dir }}/k3s-apps-install/files/longhorn-backup-target-credential-secret.yaml"
+    mode: "0644"
+  delegate_to: localhost
+
+- name: Apply secret
+  become: false
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ playbook_dir }}/k3s-apps-install/files/longhorn-backup-target-credential-secret.yaml"
+  delegate_to: localhost
+
+# BEGIN - TEMP
+# Remove this task when longhorn helm chart is fixed to be deployed with argoCD - https://github.com/longhorn/longhorn/issues/6415
+
+- name: Apply CRD & serviceAccount
+  become: false
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  with_items:
+    - "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system/resources/crd.yaml"
+    - "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system/resources/longhorn-service-account.yaml"
+  delegate_to: localhost
+
+# END - TEMP
+
+- name: Temporary disabled the deploy of secret longhorn-backup-target-credential-secret & monitoring
+  become: false
+  ansible.builtin.lineinfile:
+    dest: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system/kustomization.yaml"
+    regexp: "{{ item }}"
+    line: "#{{ item }}"
+    state: present
+  with_items:
+    - '- ./secrets/longhorn-backup-target-credential-secret.yaml'
+    - '- ./resources/service-monitor.yaml'
+    - '- ./resources/prometheus-rules.yaml'
+  delegate_to: localhost
+
+- name: Commit longhorn changes to repository
+  become: false
+  ansible.builtin.shell: |
+    git add kustomization.yaml &&
+    git commit -m "[Ansible] Longhorn - Temporary disabled deploy of backup & monitoting resources" &&
+    git push
+  args:
+    chdir: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system"
+  ignore_errors: true
+  register: ignore_errors_register
+  changed_when: true
+  delegate_to: localhost
+  tags:
+    - skip_ansible_lint
+
+- name: Deploy longhorn
+  become: false
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  with_items:
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/longhorn-system/project/longhorn-system.yaml'
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/longhorn-system/application/longhorn-system-no-vault.yaml'
+  delegate_to: localhost
+
+- name: Pause 1 minutes to deploy longhorn
+  ansible.builtin.pause:
+    minutes: 1
+
+- name: Wait for longhorn pods to be running
+  become: false
+  ansible.builtin.command: kubectl get pods -n longhorn-system --selector='!job-name' -o json
+  register: kubectl_get_pods_longhorn
+  until: kubectl_get_pods_longhorn.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+  retries: 10
+  delay: 30
+  changed_when: true
+  delegate_to: localhost

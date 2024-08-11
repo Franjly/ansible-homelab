@@ -1,0 +1,140 @@
+---
+- name: Create namespace "{{ apps.argocd.namespace }}"
+  become: false
+  kubernetes.core.k8s:
+    name: "{{ apps.argocd.namespace }}"
+    kind: Namespace
+    state: present
+  delegate_to: localhost
+
+- name: Enable admin user on ArgoCD
+  become: false
+  ansible.builtin.lineinfile:
+    dest: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/platform/argocd/values-no-metrics.yaml"
+    regexp: "^(\\s*)admin.enabled:.*"
+    line: '\1admin.enabled: "true"'
+    backrefs: true
+    state: present
+  delegate_to: localhost
+
+- name: Rename default values.yaml file
+  become: false
+  ansible.builtin.copy:
+    remote_src: true
+    src: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/platform/argocd/values.yaml"
+    dest: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/platform/argocd/values.yaml.tmp"
+    mode: "644"
+  delegate_to: localhost
+
+- name: Delete default values.yaml file to avoid conflicts
+  become: false
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/platform/argocd/values.yaml"
+    state: absent
+  delegate_to: localhost
+
+- name: Deploy ArgoCD
+  become: false
+  ansible.builtin.shell: |
+    helm dependency build &&
+    helm template "{{ apps.argocd.name }}" --include-crds --namespace "{{ apps.argocd.namespace }}" --values=values-no-metrics.yaml . > resources/all.yaml &&
+    kubectl apply -k .
+  args:
+    chdir: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/platform/argocd/"
+  changed_when: true
+  delegate_to: localhost
+
+- name: Pause 1 minutes to deploy argocd
+  ansible.builtin.pause:
+    minutes: 1
+
+- name: Wait for argocd pods to be running
+  become: false
+  ansible.builtin.command: kubectl get pods -n argocd -o json
+  register: kubectl_get_pods_argocd
+  until: kubectl_get_pods_argocd.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+  retries: 10
+  delay: 30
+  changed_when: true
+  delegate_to: localhost
+
+- name: Add calico deploy to argocd
+  become: false
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  with_items:
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/calico/project/calico.yaml'
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/calico/application/calico.yaml'
+  delegate_to: localhost
+
+- name: Download & install ArgoCD CLI
+  become: true
+  ansible.builtin.get_url:
+    url: "https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64"
+    dest: /usr/local/bin/argocd
+    mode: '0755'
+  delegate_to: localhost
+
+- name: Port-fordward argocd
+  become: false
+  ansible.builtin.shell: kubectl port-forward -n argocd service/argocd-server 8443:443 > /dev/null 2>&1 &
+  changed_when: true
+  delegate_to: localhost
+
+- name: Pause 1 minutes
+  ansible.builtin.pause:
+    minutes: 1
+
+- name: Login on argocd with admin
+  become: false
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      argocd login localhost:8443 --insecure --username admin \
+        --password $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -di)
+    executable: /bin/bash
+  changed_when: true
+  delegate_to: localhost
+
+- name: Set login to user {{ apps.argocd.users.fly.name }}
+  become: false
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      argocd account update-password --insecure \
+        --current-password $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -di) \
+        --account {{ apps.argocd.users.fly.name }} --new-password '{{ apps.argocd.users.fly.password }}'
+    executable: /bin/bash
+  changed_when: true
+  delegate_to: localhost
+
+- name: Set login to user {{ apps.argocd.users.argocd.name }}
+  become: false
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      argocd account update-password --insecure \
+        --current-password $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -di) \
+        --account {{ apps.argocd.users.argocd.name }} --new-password '{{ apps.argocd.users.argocd.password }}'
+    executable: /bin/bash
+  changed_when: true
+  delegate_to: localhost
+
+- name: Get kubectl port-forward process
+  become: false
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      ps -ef | grep -v grep | grep -w 'kubectl port-forward -n argocd service/argocd-server 8443:443' | awk '{print $2}'
+    executable: /bin/bash
+  register: port_forward_process
+  changed_when: true
+  delegate_to: localhost
+
+- name: Kill kubectl port-forward process
+  become: false
+  ansible.builtin.command: "kill -9 {{ item }}"
+  with_items: "{{ port_forward_process.stdout_lines }}"
+  changed_when: true
+  delegate_to: localhost

@@ -1,0 +1,16 @@
+---
+- name: Unzip Vault CLI binary
+  become: true
+  ansible.builtin.unarchive:
+    src: /tmp/vault.zip
+    dest: /usr/local/bin
+    remote_src: false
+  delegate_to: localhost
+  notify: Make Vault CLI executable
+
+- name: Make Vault CLI executable
+  become: true
+  ansible.builtin.file:
+    path: /usr/local/bin/vault
+    mode: '0755'
+  delegate_to: localhost

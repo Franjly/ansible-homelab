@@ -1,0 +1,172 @@
+---
+- name: Create namespace "{{ apps.monitoring_system.namespace }}"
+  become: false
+  kubernetes.core.k8s:
+    name: "{{ apps.monitoring_system.namespace }}"
+    kind: Namespace
+    state: present
+  delegate_to: localhost
+
+- name: Get list of uptime-kuma volume backups
+  become: false
+  ansible.builtin.uri:
+    url: "{{ apps.longhorn.base_url }}/v1/backupvolumes/{{ apps.monitoring_system.uptime_kuma.volume_name }}?action=backupList"
+    method: POST
+    validate_certs: false
+  register: backup_list
+  delegate_to: localhost
+
+- name: Get latest backup
+  ansible.builtin.set_fact:
+    backup_id: "{{ backup_list | json_query('json.data[*].{created: created, id: id}') | sort(attribute='created') | reverse | json_query('[0].id') }}"
+
+- name: Restore uptime-kuma volume backup from longhorn
+  become: false
+  ansible.builtin.uri:
+    url: "{{ apps.longhorn.base_url }}/v1/volumes"
+    method: POST
+    body: >-
+      {
+        "name":"{{ apps.monitoring_system.uptime_kuma.volume_name }}",
+        "numberOfReplicas":2,
+        "accessMode":"rwo",
+        "encrypted":false,
+        "nodeSelector":[],
+        "diskSelector":[],
+        "fromBackup":"s3://longhorn-backups@us-east-1/?backup={{ backup_id }}&volume={{ apps.monitoring_system.uptime_kuma.volume_name }}",
+        "staleReplicaTimeout":20
+      }
+    body_format: json
+    validate_certs: false
+  delegate_to: localhost
+
+- name: Pause 1 minutes to restore uptime-kuma volume backup
+  ansible.builtin.pause:
+    minutes: 1
+  delegate_to: localhost
+
+- name: Create PV uptime-kuma
+  become: false
+  ansible.builtin.uri:
+    url: "https://longhorn.local.tecno-fly.com/v1/volumes/{{ apps.monitoring_system.uptime_kuma.volume_name }}?action=pvCreate"
+    method: POST
+    body: '{"pvName":"{{ apps.monitoring_system.uptime_kuma.volume_name }}","fsType":"ext4"}'
+    body_format: json
+    validate_certs: false
+  delegate_to: localhost
+
+- name: Create PVC uptime-kuma
+  become: false
+  ansible.builtin.uri:
+    url: "https://longhorn.local.tecno-fly.com/v1/volumes/{{ apps.monitoring_system.uptime_kuma.volume_name }}?action=pvcCreate"
+    method: POST
+    body: '{"namespace":"{{ apps.monitoring_system.namespace }}","pvcName":"{{ apps.monitoring_system.uptime_kuma.pvc_name }}"}'
+    body_format: json
+    validate_certs: false
+  delegate_to: localhost
+
+- name: Deploy monitoring-system
+  become: false
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  with_items:
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/monitoring-system/project/monitoring-system.yaml'
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/monitoring-system/application/monitoring-system.yaml'
+  delegate_to: localhost
+
+- name: Pause 60 seconds to deploy kube-prometheus-stack
+  ansible.builtin.pause:
+    seconds: 60
+  delegate_to: localhost
+
+- name: Wait for monitoring-system pods to be running
+  become: false
+  ansible.builtin.command: kubectl get pods -n monitoring-system -o json
+  register: kubectl_get_pods_kube_prometheus_stack
+  until: kubectl_get_pods_kube_prometheus_stack.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+  retries: 20
+  delay: 60
+  changed_when: true
+  delegate_to: localhost
+
+- name: Patch calico FelixConfiguration to activate metrics
+  become: false
+  ansible.builtin.shell: "kubectl patch felixconfiguration default --type merge --patch '{\"spec\":{\"prometheusMetricsEnabled\": true}}'"
+  changed_when: true
+  delegate_to: localhost
+
+- name: Deploy calico-metrics
+  become: false
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  with_items:
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/calico-metrics/project/calico-metrics.yaml'
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/calico-metrics/application/calico-metrics.yaml'
+  delegate_to: localhost
+
+- name: Restore longhorn kustomization file
+  become: false
+  ansible.builtin.lineinfile:
+    dest: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system/kustomization.yaml"
+    regexp: "^#{{ item }}"
+    line: "{{ item }}"
+    state: present
+  with_items:
+    - '- ./resources/service-monitor.yaml'
+    - '- ./resources/prometheus-rules.yaml'
+  delegate_to: localhost
+
+- name: Commit longhorn changes to repository
+  become: false
+  ansible.builtin.shell: |
+    git add kustomization.yaml &&
+    git commit -m "[Ansible] Longhorn - Restore kustomization file" &&
+    git push
+  args:
+    chdir: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system"
+  ignore_errors: true
+  register: ignore_errors_register
+  changed_when: true
+  delegate_to: localhost
+  tags:
+    - skip_ansible_lint
+
+- name: Enable ingress-nginx metrics
+  become: false
+  ansible.builtin.lineinfile:
+    dest: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/ingress-nginx/values.yaml"
+    regexp: "^(\\s*)enabled:.*"
+    line: '\1enabled: true'
+    firstmatch: true
+    backrefs: true
+    state: present
+  delegate_to: localhost
+
+- name: Enable ingress-nginx metrics
+  become: false
+  ansible.builtin.lineinfile:
+    dest: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/ingress-nginx/kustomization.yaml"
+    regexp: "^#{{ item }}"
+    line: "{{ item }}"
+    state: present
+  with_items:
+    - '- ./resources/prometheus-rules.yaml'
+  delegate_to: localhost
+
+- name: Commit ingress-nginx changes to repository
+  become: false
+  ansible.builtin.shell: |
+    git add values.yaml &&
+    git add kustomization.yaml &&
+    git commit -m "[Ansible] ingress-nginx - Enable metrics" &&
+    git push
+  args:
+    chdir: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/ingress-nginx"
+  ignore_errors: true
+  register: ignore_errors_register
+  changed_when: true
+  delegate_to: localhost
+  tags:
+    - skip_ansible_lint
