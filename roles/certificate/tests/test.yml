@@ -1,0 +1,5 @@
+---
+- hosts: Test certificate role
+  remote_user: root
+  roles:
+    - certificate
