@@ -1,0 +1,24 @@
+---
+- name: Deploy pi-hole
+  become: false
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  with_items:
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/apps/pi-hole/project/pi-hole.yaml'
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/apps/pi-hole/application/pi-hole.yaml'
+  delegate_to: localhost
+
+- name: Pause 30 seconds to deploy pi-hole
+  ansible.builtin.pause:
+    seconds: 30
+
+- name: Wait for pi-hole pods to be running
+  become: false
+  ansible.builtin.command: kubectl get pods -n pi-hole -o json
+  register: kubectl_get_pods_pi_hole
+  until: kubectl_get_pods_pi_hole.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+  retries: 10
+  delay: 30
+  changed_when: true
+  delegate_to: localhost

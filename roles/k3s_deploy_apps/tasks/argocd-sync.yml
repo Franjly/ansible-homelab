@@ -1,0 +1,60 @@
+---
+- name: Pause 3 minutes before re-sync argocd
+  become: false
+  ansible.builtin.pause:
+    minutes: 3
+  changed_when: true
+  delegate_to: localhost
+
+- name: Port-fordward argocd
+  become: false
+  ansible.builtin.shell: kubectl port-forward -n argocd service/argocd-server 8443:443 > /dev/null 2>&1 &
+  changed_when: true
+  delegate_to: localhost
+
+- name: Pause 30 seconds
+  ansible.builtin.pause:
+    seconds: 30
+  delegate_to: localhost
+
+- name: Login on argocd with admin
+  become: false
+  ansible.builtin.command: >
+    argocd login localhost:8443 --insecure --username {{ apps.argocd.users.fly.name }}
+    --password {{ apps.argocd.users.fly.password | quote }}
+  retries: 5
+  delay: 30
+  register: result
+  until: result.rc == 0
+  changed_when: true
+  delegate_to: localhost
+
+- name: Sync argocd
+  become: false
+  ansible.builtin.command: "argocd app sync argocd"
+  async: 300
+  poll: 30
+  retries: 5
+  delay: 30
+  register: result
+  until: result.rc is defined and result.rc == 0
+  changed_when: true
+  delegate_to: localhost
+
+- name: Get kubectl port-forward process
+  become: false
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      ps -ef | grep -v grep | grep -w 'kubectl port-forward -n argocd service/argocd-server 8443:443' | awk '{print $2}'
+    executable: /bin/bash
+  register: port_forward_process
+  changed_when: true
+  delegate_to: localhost
+
+- name: Kill kubectl port-forward process
+  become: false
+  ansible.builtin.command: "kill -9 {{ item }}"
+  with_items: "{{ port_forward_process.stdout_lines }}"
+  changed_when: true
+  delegate_to: localhost

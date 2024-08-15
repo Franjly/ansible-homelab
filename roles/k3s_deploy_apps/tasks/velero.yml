@@ -1,0 +1,24 @@
+---
+- name: Deploy velero
+  become: false
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ item }}"
+  with_items:
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/velero/project/velero.yaml'
+    - '{{ playbook_dir }}/k3s-apps-install/files/argocd-homelab-pi-k3s/system/velero/application/velero.yaml'
+  delegate_to: localhost
+
+- name: Pause 30 seconds to deploy velero
+  ansible.builtin.pause:
+    seconds: 30
+
+- name: Wait for velero pods to be running
+  become: false
+  ansible.builtin.command: kubectl get pods -n velero -o json
+  register: kubectl_get_pods_velero
+  until: kubectl_get_pods_velero.stdout|from_json|json_query('items[*].status.phase')|unique == ["Running"]
+  retries: 10
+  delay: 30
+  changed_when: true
+  delegate_to: localhost

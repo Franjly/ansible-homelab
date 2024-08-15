@@ -9,79 +9,94 @@
     file: init.yml
   run_once: true
 
-# - name: Deploy calico
+- name: Deploy calico
+  ansible.builtin.include_tasks:
+    file: calico.yml
+  run_once: true
+
+- name: Deploy argocd
+  ansible.builtin.include_tasks:
+    file: argocd.yml
+  run_once: true
+
+# - name: Deploy k8tz
 #   ansible.builtin.include_tasks:
-#     file: calico.yml
+#     file: k8tz.yml
 #   run_once: true
 
-# - name: Deploy argocd
-#   ansible.builtin.include_tasks:
-#     file: argocd.yml
-#   run_once: true
+- name: Deploy metallb
+  ansible.builtin.include_tasks:
+    file: metallb.yml
+  run_once: true
 
-# # - name: Deploy k8tz
-# #   ansible.builtin.include_tasks:
-# #     file: k8tz.yml
-# #   run_once: true
+- name: Deploy ingress
+  ansible.builtin.include_tasks:
+    file: ingress.yml
+  run_once: true
 
-# - name: Deploy metallb
-#   ansible.builtin.include_tasks:
-#     file: metallb.yml
-#   run_once: true
+- name: Deploy longhorn
+  ansible.builtin.include_tasks:
+    file: longhorn.yml
+  run_once: true
 
-# - name: Deploy ingress
-#   ansible.builtin.include_tasks:
-#     file: ingress.yml
-#   run_once: true
+- name: Deploy vault
+  ansible.builtin.include_tasks:
+    file: vault.yml
+  run_once: true
 
-# - name: Deploy longhorn
-#   ansible.builtin.include_tasks:
-#     file: longhorn.yml
-#   run_once: true
+- name: Deploy nfs-provisioner
+  ansible.builtin.include_tasks:
+    file: nfs-provisioner.yml
+  run_once: true
 
-# - name: Deploy vault
-#   ansible.builtin.include_tasks:
-#     file: vault.yml
-#   run_once: true
+- name: Deploy monitoring apps
+  ansible.builtin.include_tasks:
+    file: monitoring.yml
+  run_once: true
 
-# - name: Deploy nfs-provisioner
-#   ansible.builtin.include_tasks:
-#     file: nfs-provisioner.yml
-#   run_once: true
+- name: Deploy cert-manager
+  ansible.builtin.include_tasks:
+    file: cert-manager.yml
+  run_once: true
 
-# - name: Deploy monitoring apps
-#   ansible.builtin.include_tasks:
-#     file: monitoring.yml
-#   run_once: true
+- name: Deploy dashboard apps
+  ansible.builtin.include_tasks:
+    file: dashboards.yml
+  run_once: true
 
-# - name: Deploy cert-manager
-#   ansible.builtin.include_tasks:
-#     file: cert-manager.yml
-#   run_once: true
+- name: Deploy external-endpoints
+  ansible.builtin.include_tasks:
+    file: external-endpoints.yml
+  run_once: true
+
+- name: Deploy arr apps
+  ansible.builtin.include_tasks:
+    file: arr.yml
+  run_once: true
+
+- name: Deploy octoprint
+  ansible.builtin.include_tasks:
+    file: octoprint.yml
+  run_once: true
+
+- name: Deploy cloudfared
+  ansible.builtin.include_tasks:
+    file: cloudflare.yml
+  run_once: true
+
+- name: Deploy pod-info
+  ansible.builtin.include_tasks:
+    file: pod-info.yml
+  run_once: true
+
+- name: Deploy velero
+  ansible.builtin.include_tasks:
+    file: velero.yml
+  run_once: true
 
 # - name: Deploy pi-hole
 #   ansible.builtin.include_tasks:
 #     file: pi-hole.yml
-#   run_once: true
-
-# - name: Deploy velero
-#   ansible.builtin.include_tasks:
-#     file: velero.yml
-#   run_once: true
-
-# - name: Deploy dashboard apps
-#   ansible.builtin.include_tasks:
-#     file: dashboards.yml
-#   run_once: true
-
-# - name: Deploy external-endpoints
-#   ansible.builtin.include_tasks:
-#     file: external-endpoints.yml
-#   run_once: true
-
-# - name: Deploy arr apps
-#   ansible.builtin.include_tasks:
-#     file: arr.yml
 #   run_once: true
 
 # - name: Deploy home-assistant
@@ -89,40 +104,25 @@
 #     file: home-assistant.yml
 #   run_once: true
 
-- name: Deploy octoprint
-  ansible.builtin.include_tasks:
-    file: octoprint.yml
-  run_once: true
-
-# - name: Deploy cloudfared
+# - name: Deploy calibre
 #   ansible.builtin.include_tasks:
-#     file: cloudflare.yml
+#     file: calibre.yml
 #   run_once: true
 
-# - name: Deploy pod-info
+# - name: Deploy gitea
 #   ansible.builtin.include_tasks:
-#     file: pod-info.yml
+#     file: gitea.yml
 #   run_once: true
 
-# # - name: Deploy calibre
-# #   ansible.builtin.include_tasks:
-# #     file: calibre.yml
-# #   run_once: true
+# - name: Deploy trivy
+#   ansible.builtin.include_tasks:
+#     file: trivy.yml
+#   run_once: true
 
-# # - name: Deploy gitea
-# #   ansible.builtin.include_tasks:
-# #     file: gitea.yml
-# #   run_once: true
-
-# # - name: Deploy trivy
-# #   ansible.builtin.include_tasks:
-# #     file: trivy.yml
-# #   run_once: true
-
-# # - name: Deploy kyverno
-# #   ansible.builtin.include_tasks:
-# #     file:  kyverno.yml
-# #   run_once: true
+# - name: Deploy kyverno
+#   ansible.builtin.include_tasks:
+#     file:  kyverno.yml
+#   run_once: true
 
 - name: Clean
   ansible.builtin.include_tasks:
