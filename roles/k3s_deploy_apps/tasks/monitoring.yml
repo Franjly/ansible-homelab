@@ -114,15 +114,23 @@
     line: "{{ item }}"
     state: present
   with_items:
-    - '- ./resources/service-monitor.yaml'
     - '- ./resources/prometheus-rules.yaml'
+  delegate_to: localhost
+
+- name: Restore longhorn service monitor
+  become: false
+  ansible.builtin.replace:
+    path: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system/values.yaml"
+    regexp: '^ *enabled: false #Ansible'
+    replace: '      enabled: true #Ansible'
   delegate_to: localhost
 
 - name: Commit longhorn changes to repository
   become: false
   ansible.builtin.shell: |
     git add kustomization.yaml &&
-    git commit -m "[Ansible] Longhorn - Restore kustomization file" &&
+    git add values.yaml &&
+    git commit -m "[Ansible] Longhorn - Restore kustomization & values file" &&
     git push
   args:
     chdir: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system"

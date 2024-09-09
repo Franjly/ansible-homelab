@@ -22,21 +22,6 @@
     src: "{{ playbook_dir }}/k3s-apps-install/files/longhorn-backup-target-credential-secret.yaml"
   delegate_to: localhost
 
-# BEGIN - TEMP
-# Remove this task when longhorn helm chart is fixed to be deployed with argoCD - https://github.com/longhorn/longhorn/issues/6415
-
-- name: Apply CRD & serviceAccount
-  become: false
-  kubernetes.core.k8s:
-    state: present
-    src: "{{ item }}"
-  with_items:
-    - "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system/resources/crd.yaml"
-    - "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system/resources/longhorn-service-account.yaml"
-  delegate_to: localhost
-
-# END - TEMP
-
 - name: Temporary disabled the deploy of secret longhorn-backup-target-credential-secret & monitoring
   become: false
   ansible.builtin.lineinfile:
@@ -46,14 +31,22 @@
     state: present
   with_items:
     - '- ./secrets/longhorn-backup-target-credential-secret.yaml'
-    - '- ./resources/service-monitor.yaml'
     - '- ./resources/prometheus-rules.yaml'
+  delegate_to: localhost
+
+- name: Temporary disabled longhorn service monitor
+  become: false
+  ansible.builtin.replace:
+    path: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/longhorn-system/values.yaml"
+    regexp: '^ *enabled: true #Ansible'
+    replace: '      enabled: false #Ansible'
   delegate_to: localhost
 
 - name: Commit longhorn changes to repository
   become: false
   ansible.builtin.shell: |
     git add kustomization.yaml &&
+    git add values.yaml &&
     git commit -m "[Ansible] Longhorn - Temporary disabled deploy of backup & monitoting resources" &&
     git push
   args:
