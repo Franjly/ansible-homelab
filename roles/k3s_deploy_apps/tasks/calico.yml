@@ -35,12 +35,6 @@
   ansible.builtin.pause:
     minutes: 5
 
-# - name: Restart calico controller
-#   become: false
-#   ansible.builtin.command: kubectl rollout restart deploy calico-kube-controllers -n calico-system
-#   changed_when: true
-#   delegate_to: localhost
-
 - name: Wait for calico pods to be running
   become: false
   ansible.builtin.command: kubectl get pods -n calico-system -o json
@@ -50,12 +44,6 @@
   delay: 60
   changed_when: true
   delegate_to: localhost
-
-# - name: Restart metrics server
-#   become: false
-#   ansible.builtin.command: kubectl rollout restart deploy metrics-server -n kube-system
-#   changed_when: true
-#   delegate_to: localhost
 
 - name: Pause 5 minutes to deploy calico
   ansible.builtin.pause:
