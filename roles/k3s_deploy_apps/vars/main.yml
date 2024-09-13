@@ -2,7 +2,7 @@
 apps:
   homelab_repo: git@github.com:Franjly/homelab-pi-k3s.git
   argocd_homelab_repo: git@github.com:Franjly/argocd-homelab-pi-k3s.git
-  branch_name: feature/upgrade-apps-2024
+  branch_name: main
 
   calico:
     name: calico
