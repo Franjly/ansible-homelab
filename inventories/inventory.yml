@@ -81,3 +81,11 @@ all:
       hosts:
         pi-hole-0:
           ansible_host: 192.168.40.254
+    pi-dev:
+      vars:
+        network:
+          prefix_ip_address: 192.168.40.
+          gateway: 192.168.40.1
+      hosts:
+        pi-dev-0:
+          ansible_host: 192.168.40.123
