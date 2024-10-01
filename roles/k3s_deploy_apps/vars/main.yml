@@ -243,6 +243,7 @@ apps:
       - { pvc_name: lidarr-config, volume_name: pvc-ad0daf67-7db4-4dce-b0b6-4ae09c16d838 }
       - { pvc_name: sonarr-config, volume_name: pvc-fba0a404-6594-4db2-b9e4-649405c19748 }
       - { pvc_name: requestrr-config, volume_name: pvc-09b576c3-0f20-41d6-8720-c4b153c83a68 }
+      - { pvc_name: overseerr-config, volume_name: pvc-09811dba-614b-4166-a069-7af7f1abc2e0 }
 
   dashboards:
     namespace: dashboards
