@@ -19,8 +19,7 @@
   become: false
   ansible.builtin.shell: |
     helm dependency build &&
-    helm template "{{ apps.calico.name }}" --include-crds --namespace "{{ apps.calico.namespace }}" . > resources/all.yaml &&
-    kubectl apply --server-side=true --force-conflicts -n tigera-operator -k .
+    helm upgrade --install "{{ apps.calico.name }}" --namespace "{{ apps.calico.namespace }}" .
   args:
     chdir: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/system/calico/"
   retries: 3
