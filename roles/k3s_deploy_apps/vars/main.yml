@@ -268,3 +268,14 @@ apps:
 
   external_endpoints:
     namespace: external-endpoints
+
+  my_speed:
+    namespace: myspeed
+    volume_name: pvc-f26d9aac-edd8-45e3-a795-65a4b1b15996
+    pvc_name: myspeed-data
+
+  romm:
+    namespace: romm
+    volumes:
+      - { pvc_name: romm-config, volume_name: pvc-cb280e36-cff0-4d41-9a61-75f86df7e19e }
+      - { pvc_name: romm-mariadb-data, volume_name: pvc-7ac67bee-10e9-4258-82f2-b9ce825af10c }

@@ -79,7 +79,7 @@
     file: octoprint.yml
   run_once: true
 
-- name: Deploy cloudfared
+- name: Deploy cloudflared
   ansible.builtin.include_tasks:
     file: cloudflare.yml
   run_once: true
@@ -92,6 +92,16 @@
 - name: Deploy velero
   ansible.builtin.include_tasks:
     file: velero.yml
+  run_once: true
+
+- name: Deploy myspeed
+  ansible.builtin.include_tasks:
+    file: myspeed.yml
+  run_once: true
+
+- name: Deploy romm
+  ansible.builtin.include_tasks:
+    file: romm.yml
   run_once: true
 
 # - name: Deploy pi-hole
