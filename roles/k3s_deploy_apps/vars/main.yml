@@ -265,3 +265,6 @@ apps:
 
   pod_info:
     namespace: pod-info
+
+  external_endpoints:
+    namespace: external-endpoints

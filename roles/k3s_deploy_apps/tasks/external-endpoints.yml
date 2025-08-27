@@ -1,4 +1,26 @@
 ---
+- name: Create namespace "{{ apps.external_endpoints.namespace }}"
+  become: false
+  kubernetes.core.k8s:
+    name: "{{ apps.external_endpoints.namespace }}"
+    kind: Namespace
+    state: present
+  delegate_to: localhost
+
+- name: Deploy external-endpoints
+  become: false
+  ansible.builtin.shell: |
+    kubectl apply -n external-endpoints -k .
+  args:
+    chdir: "{{ playbook_dir }}/k3s-apps-install/files/homelab-pi-k3s/apps/external-endpoints/"
+  retries: 3
+  delay: 5
+  ignore_errors: true
+  register: task_result
+  until: task_result.rc == 0
+  changed_when: true
+  delegate_to: localhost
+
 - name: Deploy external-endpoints
   become: false
   kubernetes.core.k8s:
