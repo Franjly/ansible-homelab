@@ -111,7 +111,21 @@
     mode: '0755'
   register: download_result
   delegate_to: localhost
-  notify: Unzip Vault CLI binary
+
+- name: Unzip Vault CLI binary
+  become: true
+  ansible.builtin.unarchive:
+    src: /tmp/vault.zip
+    dest: /usr/local/bin
+    remote_src: false
+  delegate_to: localhost
+
+- name: Make Vault CLI executable
+  become: true
+  ansible.builtin.file:
+    path: /usr/local/bin/vault
+    mode: '0755'
+  delegate_to: localhost
 
 - name: Port-fordward vault
   become: false
