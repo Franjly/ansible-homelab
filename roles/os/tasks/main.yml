@@ -11,19 +11,44 @@
     line: '\g<1>{{ inventory_hostname }}'
     state: present
 
+## Begin block - This block could be removed
+
+# dphys_swapfile is not installed by default on
+# Raspberry Pi OS anymore, but in case it is installed from previous setups,
+# we disable it here.
 - name: Check if swap is enabled
-  ansible.builtin.command: swapon -s | wc -l
+  ansible.builtin.shell: swapon -s | wc -l
   changed_when: false
   register: swap_enabled
 
+- name: Check if dphys-swapfile exists
+  ansible.builtin.stat:
+    path: /usr/sbin/dphys-swapfile
+  register: dphys_swapfile
+
 - name: Disable swap
-  ansible.builtin.command: "{{ item }}"
+  ansible.builtin.shell: "{{ item }}"
   with_items:
     - dphys-swapfile swapoff
     - dphys-swapfile uninstall
     - update-rc.d dphys-swapfile disable
   changed_when: false
-  when: swap_enabled.stdout != "1"
+  when: swap_enabled.stdout != "1" and dphys_swapfile.stat.exists
+
+  ## End block
+
+- name: Disable all swap immediately
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb | int > 0
+
+  # Newer Raspberry Pi OS versions use zram by default, so we need to
+  # disable the systemd unit that sets it up.
+- name: Mask systemd zram generator unit
+  ansible.builtin.systemd:
+    name: systemd-zram-setup@zram0.service
+    enabled: false
+    masked: true
+  ignore_errors: true
 
 - name: Add users to passwordless sudoers
   ansible.builtin.lineinfile:
