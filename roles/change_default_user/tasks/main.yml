@@ -36,6 +36,12 @@
     dest: /etc/lightdm/lightdm.conf
     mode: '644'
     content: 'autologin-user={{ user }}'
+  
+- name: Ensure getty directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/getty@tty1.service.d
+    state: directory
+    mode: '0755'
 
 - name: Set as default autologin user -> "{{ user }}"
   ansible.builtin.copy:
