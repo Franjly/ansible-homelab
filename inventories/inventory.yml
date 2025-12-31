@@ -73,6 +73,8 @@ all:
           ansible_host: 192.168.30.20
         pi-kube-worker-1:
           ansible_host: 192.168.30.21
+        pi-kube-worker-2:
+          ansible_host: 192.168.30.22
     pi-hole:
       vars:
         network:
