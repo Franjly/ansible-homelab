@@ -33,7 +33,7 @@
     body: >-
       {
         "name":"{{ apps.octoprint.volume_name }}",
-        "numberOfReplicas":2,
+        "numberOfReplicas":3,
         "accessMode":"rwo",
         "encrypted":false,
         "nodeSelector":[],

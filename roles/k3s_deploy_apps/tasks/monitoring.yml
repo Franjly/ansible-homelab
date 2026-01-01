@@ -28,7 +28,7 @@
     body: >-
       {
         "name":"{{ apps.monitoring_system.uptime_kuma.volume_name }}",
-        "numberOfReplicas":2,
+        "numberOfReplicas":3,
         "accessMode":"rwo",
         "encrypted":false,
         "nodeSelector":[],

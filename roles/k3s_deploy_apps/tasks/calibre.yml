@@ -52,7 +52,7 @@
     body: >-
       {
         "name":"{{ item.volume_name }}",
-        "numberOfReplicas":2,
+        "numberOfReplicas":3,
         "accessMode":"rwo",
         "encrypted":false,
         "nodeSelector":[],
