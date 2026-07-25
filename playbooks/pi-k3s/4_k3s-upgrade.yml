@@ -1,0 +1,13 @@
+---
+- name: Upgrade k3s master
+  hosts: master
+  become: true
+  roles:
+    - k3s_upgrade
+
+- name: Upgrade k3s workers
+  hosts: workers
+  become: true
+  serial: 1
+  roles:
+    - k3s_upgrade
