@@ -1,0 +1,23 @@
+---
+# defaults file for k3s_upgrade
+
+# The exact k3s version to upgrade to, e.g. 'v1.31.5+k3s1'. Left empty on
+# purpose so an upgrade never silently jumps to whatever "latest" is -
+# you must pass it explicitly:
+#   ansible-playbook playbooks/pi-k3s/4_k3s-upgrade.yml -e k3s_upgrade_version=v1.31.5+k3s1
+k3s_upgrade_version: "v1.36.2+k3s1"
+
+# Whether to cordon+drain a node before upgrading it and uncordon it
+# afterwards. Set to false if you're fine with pods on that node going
+# down during the upgrade instead of being evicted/rescheduled first
+# (e.g. a single-master homelab where the workers can't absorb the
+# master's workload anyway).
+k3s_upgrade_drain_nodes: false
+
+# How long (seconds) to wait for pods to be evicted before giving up on a drain
+k3s_drain_timeout: 120
+
+# How many times/how often to poll a node waiting for it to report Ready
+# after being upgraded
+k3s_upgrade_wait_retries: 30
+k3s_upgrade_wait_delay: 10

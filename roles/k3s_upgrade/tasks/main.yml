@@ -1,0 +1,29 @@
+---
+- name: Load k3s configuration (channel, install flags)
+  ansible.builtin.include_vars:
+    file: "{{ role_path }}/../k3s_install/vars/main.yml"
+
+- name: Ensure an explicit target version was provided
+  ansible.builtin.assert:
+    that:
+      - k3s_upgrade_version is defined
+      - k3s_upgrade_version | length > 0
+    fail_msg: >-
+      k3s_upgrade_version is not set. Pass the exact version you want to
+      upgrade to, e.g.:
+      ansible-playbook playbooks/pi-k3s/4_k3s-upgrade.yml
+      -e k3s_upgrade_version=v1.31.5+k3s1
+
+- name: Use the requested target version for this upgrade
+  ansible.builtin.set_fact:
+    k3s_version: "{{ k3s_upgrade_version }}"
+
+- name: Upgrade master
+  ansible.builtin.include_tasks:
+    file: upgrade_master.yml
+  when: '"master" in group_names'
+
+- name: Upgrade nodes
+  ansible.builtin.include_tasks:
+    file: upgrade_nodes.yml
+  when: '"workers" in group_names'

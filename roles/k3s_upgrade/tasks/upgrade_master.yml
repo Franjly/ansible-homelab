@@ -1,0 +1,86 @@
+---
+- name: Get current k3s version
+  ansible.builtin.command: k3s --version
+  register: k3s_current_version
+  changed_when: false
+
+- name: Show current k3s version
+  ansible.builtin.debug:
+    msg: "{{ k3s_current_version.stdout_lines[0] }}"
+
+- name: Drain master node
+  kubernetes.core.k8s_drain:
+    name: "{{ inventory_hostname }}"
+    kubeconfig: "~/.kube/config"
+    state: drain
+    delete_options:
+      ignore_daemonsets: true
+      delete_emptydir_data: true
+      force: true
+      wait_timeout: "{{ k3s_drain_timeout }}"
+  delegate_to: localhost
+  become: false
+  when: k3s_upgrade_drain_nodes | bool
+
+- name: Download K3s installation script
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/get-k3s.sh
+    mode: '0755'
+
+- name: Upgrade k3s master
+  ansible.builtin.command: /tmp/get-k3s.sh
+  environment:
+    INSTALL_K3S_VERSION: '{{ k3s_version }}'
+    INSTALL_K3S_CHANNEL: '{{ k3s_channel }}'
+    K3S_KUBECONFIG_MODE: '600'
+    INSTALL_K3S_EXEC: "{{ k3s_master.flags | join(' ') }}"
+  register: k3s_server_upgrade
+  changed_when: true
+
+- name: Master upgrade stdout
+  ansible.builtin.debug:
+    msg: "{{ k3s_server_upgrade.stdout_lines }}"
+
+- name: Master upgrade stderr
+  ansible.builtin.debug:
+    msg: "{{ k3s_server_upgrade.stderr_lines }}"
+
+- name: Get join token
+  ansible.builtin.slurp:
+    src: '/var/lib/rancher/k3s/server/node-token'
+  register: k3s_node_token_encoded
+
+- name: Wait for master node to report Ready
+  kubernetes.core.k8s_info:
+    kind: Node
+    name: "{{ inventory_hostname }}"
+    kubeconfig: "~/.kube/config"
+  delegate_to: localhost
+  become: false
+  register: k3s_master_node_info
+  until: >-
+    k3s_master_node_info.resources | length > 0 and
+    (k3s_master_node_info.resources[0].status.conditions
+      | selectattr('type', 'equalto', 'Ready')
+      | map(attribute='status')
+      | first) == 'True'
+  retries: "{{ k3s_upgrade_wait_retries }}"
+  delay: "{{ k3s_upgrade_wait_delay }}"
+
+- name: Uncordon master node
+  kubernetes.core.k8s_drain:
+    name: "{{ inventory_hostname }}"
+    kubeconfig: "~/.kube/config"
+    state: uncordon
+  delegate_to: localhost
+  become: false
+
+- name: Get new k3s version
+  ansible.builtin.command: k3s --version
+  register: k3s_new_version
+  changed_when: false
+
+- name: Show new k3s version
+  ansible.builtin.debug:
+    msg: "{{ k3s_new_version.stdout_lines[0] }}"
