@@ -104,6 +104,11 @@
     file: romm.yml
   run_once: true
 
+- name: Deploy peanut
+  ansible.builtin.include_tasks:
+    file: peanut.yml
+  run_once: true
+
 # - name: Deploy pi-hole
 #   ansible.builtin.include_tasks:
 #     file: pi-hole.yml
